@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://prometheus-community.github.io/helm-charts'
+    chart: prometheus
+    targetRevision: '29.*'
+    helm:
+      values: |
+        server:
+          extraFlags:
+            - "web.enable-otlp-receiver"
+            - "web.enable-remote-write-receiver"
+        alertmanager:
+          enabled: false
+        prometheus-pushgateway:
+          enabled: false
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
