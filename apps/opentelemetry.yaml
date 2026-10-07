@@ -1,0 +1,69 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: opentelemetry-collector
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://open-telemetry.github.io/opentelemetry-helm-charts'
+    chart: opentelemetry-collector
+    targetRevision: '0.175.*'
+    helm:
+      values: |
+        mode: daemonset
+        presets:
+          logsCollection:
+            enabled: true
+            includeCollectorLogs: true
+          kubeletMetrics:
+            enabled: true
+          kubernetesAttributes:
+            enabled: true
+            extractAllPodLabels: true
+            extractAllPodAnnotations: true
+
+        config:
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:4317
+                http:
+                  endpoint: 0.0.0.0:4318
+
+          exporters:
+            otlphttp/prometheus:
+              endpoint: "http://prometheus-server.observability.svc.cluster.local:80/api/v1/otlp"
+              tls:
+                insecure: true
+            loki:
+              endpoint: "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
+            otlp/jaeger:
+              endpoint: "jaeger-collector.observability.svc.cluster.local:4317"
+              tls:
+                insecure: true
+
+          service:
+            pipelines:
+              traces:
+                receivers: [otlp]
+                processors: [memory_limiter, k8sattributes, batch]
+                exporters: [otlp/jaeger]
+              metrics:
+                receivers: [otlp, kubeletstats]
+                processors: [memory_limiter, k8sattributes, batch]
+                exporters: [otlphttp/prometheus]
+              logs:
+                receivers: [otlp, filelog]
+                processors: [memory_limiter, k8sattributes, batch]
+                exporters: [loki]
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
