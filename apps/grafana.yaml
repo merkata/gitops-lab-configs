@@ -28,9 +28,7 @@ spec:
               - name: Jaeger
                 type: jaeger
                 access: proxy
-                url: http://jaeger.observability.svc.cluster.local:16686/jaeger
-                jsonData:
-                  tracingService: "http://jaeger.observability.svc.cluster.local:16685"
+                url: http://jaeger.observability.svc.cluster.local/jaeger
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: observability
