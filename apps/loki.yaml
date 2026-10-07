@@ -12,6 +12,7 @@ spec:
     helm:
       values: |
         loki:
+          auth_enabled: false
           commonConfig:
             replication_factor: 1
           schemaConfig:
@@ -23,7 +24,6 @@ spec:
                 index:
                   prefix: loki_index_
                   period: 24h
-                  auth_enabled: false
           storage:
             type: filesystem
         # --- Disable internal Memcached caching to save memory ---
