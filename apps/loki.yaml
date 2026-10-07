@@ -12,6 +12,8 @@ spec:
     helm:
       values: |
         loki:
+          commonConfig:
+            replication_factor: 1
           auth_enabled: false
   destination:
     server: 'https://kubernetes.default.svc'
