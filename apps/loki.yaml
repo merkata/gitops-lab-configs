@@ -26,6 +26,11 @@ spec:
                   auth_enabled: false
           storage:
             type: filesystem
+        # --- Disable internal Memcached caching to save memory ---
+        chunksCache:
+          enabled: false
+        resultsCache:
+          enabled: false
         # enforce single binary and zero out other deployments
         singleBinary:
           replicas: 1
