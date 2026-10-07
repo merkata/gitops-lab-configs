@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://grafana.github.io/helm-charts'
+    chart: grafana
+    targetRevision: '13.*'
+    helm:
+      values: |
+        adminPassword: "admin"
+        datasources:
+          datasources.yaml:
+            apiVersion: 1
+            datasources:
+              - name: Prometheus
+                type: prometheus
+                access: proxy
+                url: http://prometheus-server.observability.svc.cluster.local
+                isDefault: true
+              - name: Loki
+                type: loki
+                access: proxy
+                url: http://loki.observability.svc.cluster.local:3100
+              - name: Jaeger
+                type: jaeger
+                access: proxy
+                url: http://jaeger.observability.svc.cluster.local:16686
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
