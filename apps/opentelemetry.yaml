@@ -40,7 +40,7 @@ spec:
             loki:
               endpoint: "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
             otlp/jaeger:
-              endpoint: "jaeger-collector.observability.svc.cluster.local:4317"
+              endpoint: "jaeger.observability.svc.cluster.local:4317"
               tls:
                 insecure: true
 
