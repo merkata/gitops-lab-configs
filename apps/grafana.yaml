@@ -26,15 +26,14 @@ spec:
                 access: proxy
                 url: http://loki.observability.svc.cluster.local:3100
               - name: Jaeger
-                type: jaeger
+                type: jaegertracing-jaeger-datasource
                 access: proxy
                 url: http://jaeger.observability.svc.cluster.local:16686
-        plugins:
-          - https://github.com/jaegertracing/grafana-plugin/releases/download/v0.4.1/jaegertracing-jaeger-datasource-0.4.1.zip;jaegertracing-jaeger-datasource
-          - https://github.com/jaegertracing/grafana-plugin/releases/download/v0.4.1/jaegertracing-jaeger-panel-0.4.1.zip;jaegertracing-jaeger-panel
         grafana.ini:
           plugins:
-            allow_loading_unsigned_plugins: jaegertracing-jaeger-datasource,jaegertracing-jaeger-panel
+            preinstall_sync: >-
+              jaegertracing-jaeger-datasource@0.4.1@https://github.com/jaegertracing/grafana-plugin/releases/download/v0.4.1/jaegertracing-jaeger-datasource-0.4.1.zip
+            allow_loading_unsigned_plugins: jaegertracing-jaeger-datasource
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: observability
