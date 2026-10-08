@@ -9,19 +9,6 @@ spec:
     repoURL: 'https://jaegertracing.github.io/helm-charts'
     chart: jaeger
     targetRevision: '4.*'
-    helm:
-      values: |
-      allInOne:
-        enabled: true
-        extraArgs:
-          - "--query.base-path=/"
-          - "--query.http-server.endpoint=0.0.0.0:16686"
-      # Enable HTTP query v1 API compatibility for legacy/Grafana callers
-      jaeger-v2:
-        enabled: true
-        query:
-          http:
-            enabled: true
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: observability

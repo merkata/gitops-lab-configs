@@ -29,9 +29,6 @@ spec:
                 type: jaeger
                 access: proxy
                 url: http://jaeger.observability.svc.cluster.local:16686
-                jsonData:
-                  # Force Grafana to use Jaeger v2 HTTP query paths
-                  implementation: "jaeger"
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: observability
