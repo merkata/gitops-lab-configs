@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: silo
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/pgsty/silo.git'
+    path: helm/silo
+    targetRevision: 'RELEASE.2026-10-18T00-00-00Z'
+    helm:
+      values: |
+        mode: 'standalone'
+        persistence:
+          enabled: false
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: argo-workflows
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
