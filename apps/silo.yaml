@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: silo
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   project: default
   source:
@@ -21,6 +23,16 @@ spec:
             purge: false
             versioning: false
             objectlocking: false
+        users:
+          - accessKey: silo-workflows-secret
+            existingSecret: user
+            existingSecretKey: password
+            policy: readwrite
+        svcaccts:
+          - accessKey: silo-workflows-secret
+            existingSecret: user
+            existingSecretKey: password
+            user: argo
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argo-workflows
