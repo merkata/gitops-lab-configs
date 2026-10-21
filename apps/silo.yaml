@@ -27,13 +27,13 @@ spec:
             versioning: false
             objectlocking: false
         users:
-          - accessKey: silo-workflows-secret
-            existingSecret: user
+          - accessKey: argo
+            existingSecret: silo-workflows-secret
             existingSecretKey: password
             policy: readwrite
         svcaccts:
-          - accessKey: silo-workflows-secret
-            existingSecret: user
+          - accessKey: argo-wf
+            existingSecret: silo-workflows-secret
             existingSecretKey: password
             user: argo
   destination:
