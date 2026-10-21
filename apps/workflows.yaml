@@ -13,10 +13,10 @@ spec:
       value: |
         s3:
           accessKeySecret:
-            name: silo-workflows-secret
+            name: silo-svcact
             key: user
           secretKeySecret:
-            name: silo-workflows-secret
+            name: silo-svcact
             key: password
   destination:
     server: 'https://kubernetes.default.svc'

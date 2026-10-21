@@ -16,7 +16,19 @@ data:
 kind: Secret
 metadata:
   creationTimestamp: null
-  name: silo-workflows-secret
+  name: silo-user
+  namespace: argo-workflows
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+---
+apiVersion: v1
+data:
+  password: d29ya2Zsb3dz
+  user: YXJnby13Zg==
+kind: Secret
+metadata:
+  creationTimestamp: null
+  name: silo-svcact
   namespace: argo-workflows
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
