@@ -18,6 +18,8 @@ spec:
           secretKeySecret:
             name: silo-svcact
             key: password
+        server:
+          authModes: [server]
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argo-workflows
