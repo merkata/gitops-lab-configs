@@ -32,7 +32,7 @@ spec:
             existingSecretKey: password
             policy: readwrite
         svcaccts:
-          - accessKey: argo-wf
+          - accessKey: argo
             existingSecret: silo-workflows-secret
             existingSecretKey: password
             user: argo
