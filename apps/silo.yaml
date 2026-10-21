@@ -16,7 +16,9 @@ spec:
         mode: 'standalone'
         persistence:
           enabled: false
-        resources: {}
+        resources:
+          requests:
+            memory: 256Mi
         buckets:
           - name: workflows
             policy: none
