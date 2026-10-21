@@ -10,7 +10,7 @@ spec:
     chart: argo-workflows
     targetRevision: '2.0.13'
     helm:
-      value: |
+      values: |
         s3:
           accessKeySecret:
             name: silo-svcact
