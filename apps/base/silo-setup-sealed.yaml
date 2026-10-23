@@ -5,7 +5,7 @@ metadata:
   name: silo-user
   namespace: silo
   annotations:
-    argocd.argoproj.io/sync-wave: "-2"
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   encryptedData:
     password: AgBrQgnuzH5Xz37dVJ/rQHqsez+bbMtAAxzUkEJsdj0oqTSFrj89BdOvx5vJA8n7H2YE1W3kYXwioYmFkgWg//kVfd4XdNKDYX2Exsaolgw0yYsrAkS8uz1KKj0hGCXn7cZfEes7bjvxDDbd/TEYLR5UZHo6yidtCL0Fz59ALG/fOquP7KJX/gSroWNu2bhUnr/PABY2yysMHYiJG0XjjkDh2wC03zW6mO9gksJgSOSwuaisRIWlZmnW0+aqdIt6xKWxplmfqA+YsUZe8UGHFKxVdMSA7Ze9+6CIF/yF3UeG9dAWNzHQEZJHHSN1Y3yhmC5BzRpChHaMk4KlfO8/CpaUNlkXil9vUrC0g/wui8mcBNzaB7h3IYEQumnK0rQnbwTqs/HyEO9wOpOsA9674t0R1FuNv+M0Xv/TW6TIMJWhcuxr4R0NahK6S1h+bY9K49AZvnag+IV12gq9rPs2I0bwh5N8MLbEhwBKzxtnkVtc1IuzVK9+PMUbAxqor6iz8kiK2qbVDIIM12zxhEVtRcaS/L6kDy766F2XdPMZ2b+fTVXWZCTFD5z51YYAByIdaYLZXldzl1THN5zwIZfrQsv6DKv4iQwObUbKX2p1I4vNLirnPenKeyoPdx+PpgE2ZqRX90NUKiYNywsYAlMbm2qkx9vgrVa2nzYlswJGnvOinZc31r8woHKLQUuJ4nNA2P+M3fKI5JH5+RY=
@@ -13,7 +13,7 @@ spec:
   template:
     metadata:
       name: silo-user
-      namespace: argo-workflows
+      namespace: silo
 ---
 apiVersion: bitnami.com/v1alpha1
 kind: SealedSecret
@@ -29,4 +29,4 @@ spec:
   template:
     metadata:
       name: silo-svcact
-      namespace: argo-workflows
+      namespace: silo
