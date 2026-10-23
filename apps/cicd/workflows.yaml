@@ -18,6 +18,9 @@ spec:
           secretKeySecret:
             name: silo-svcact
             key: password
+          insecure: true
+          bucket: workflows
+          endpoint: http://silo.silo.svc.cluster.local:9000
         server:
           authModes: [server]
   destination:
