@@ -38,8 +38,10 @@ spec:
             user: argo
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: argo-workflows
+    namespace: silo
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
