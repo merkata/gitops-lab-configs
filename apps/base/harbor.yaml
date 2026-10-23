@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitea
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: default
+  source:
+    repoURL: 'https://helm.goharbor.io'
+    chart: harbor
+    targetRevision: '1.19.4'
+    helm:
+      values: |
+        expose:
+          type: clusterIP
+          tls:
+            enabled: false
+
+        externalURL: "http://harbor.local"
+
+        trivy:
+          enabled: false
+
+        chartmuseum:
+          enabled: false
+
+        notary:
+          enabled: false
+
+        persistence:
+          enabled: true
+          persistentVolumeClaim:
+            registry:
+              storageClass: ""
+              size: 5Gi
+            database:
+              storageClass: ""
+              size: 1Gi
+            redis:
+              storageClass: ""
+              size: 1Gi
+            jobservice:
+              storageClass: ""
+              size: 1Gi
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: harbor
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
