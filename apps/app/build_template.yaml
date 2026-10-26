@@ -39,5 +39,5 @@ spec:
           - --output
           - type=docker,dest=/tmp/image.tar
           - --output
-          - type=image,name=harbor.harbor.svc.cluster.local/app/app-image:latest,push=true
+          - type=image,name=harbor-registry.harbor.svc.cluster.local:5000/app/app-image:latest,push=true
         workingDir: /src
