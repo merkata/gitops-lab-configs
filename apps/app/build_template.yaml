@@ -5,17 +5,26 @@ metadata:
   namespace: argo-workflows
 spec:
   serviceAccountName: argo-workflow
-  entrypoint: clone
+  entrypoint: clone-and-build
   templates:
-    - name: clone
+    - name: clone-and-build
       inputs:
         artifacts:
           - name: app-source
             path: /src
             git:
               repo: http://gitea-http.gitea.svc.cluster.local:3000/gitea_admin/app.git
+      outputs:
+        artifacts:
+          - name: app-image
+            path: /src/image.tar
+            s3:
+              key: app-image
       container:
-        image: busybox
-        command: [sh, -c]
-        args: ["echo Building; cd /src; ls"]
+        image: moby/buildkit:rootless
+        command: [buildctl-daemonless.sh]
+        args:
+          - build
+          - --output
+          - type=docker,dest=/src/image.tar
         workingDir: /src
