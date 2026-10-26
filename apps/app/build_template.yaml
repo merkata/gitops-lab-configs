@@ -4,6 +4,7 @@ metadata:
   name: clone-and-build
   namespace: argo-workflows
 spec:
+  serviceAccountName: argo-workflow
   entrypoint: clone
   templates:
     - name: clone
