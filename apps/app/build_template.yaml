@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: clone-and-build
+spec:
+  entrypoint: clone
+  templates:
+    - name: clone
+      inputs:
+        artifacts:
+          - name: app-source
+            path: /src
+            git:
+              repo: http://gitea-http.gitea.svc.cluster.local:3000
+      container:
+        image: busybox
+        command: [sh, -c]
+        args: ["echo Building; cd /src; ls"]
+        workingDir: /src
