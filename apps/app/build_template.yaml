@@ -28,6 +28,7 @@ spec:
         command: [buildctl-daemonless.sh]
         args:
           - build
+          - --frontend=dockerfile.v0
           - --output
           - type=docker,dest=/tmp/image.tar
         workingDir: /src
