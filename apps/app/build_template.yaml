@@ -26,6 +26,9 @@ spec:
       container:
         image: moby/buildkit:rootless
         command: [buildctl-daemonless.sh]
+        env:
+          - name: BUILDKITD_FLAGS
+            value: --oci-worker-no-process-sandbox
         args:
           - build
           - --frontend=dockerfile.v0
