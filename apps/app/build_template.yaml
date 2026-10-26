@@ -25,19 +25,34 @@ spec:
           container.apparmor.security.beta.kubernetes.io/main: unconfined
       container:
         image: moby/buildkit:rootless
-        command: [buildctl-daemonless.sh]
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            mkdir -p ~/.config/buildkit
+            cat <<EOF > ~/.config/buildkit/buildkitd.toml
+            [registry."harbor-registry.harbor.svc.cluster.local:5000"]
+              http = true
+              insecure = true
+            EOF
+            exec buildctl-daemonless.sh build \
+              --frontend=dockerfile.v0 \
+              --local context=/src \
+              --local dockerfile=/src \
+              --output type=docker,dest=/tmp/image.tar \
+              --output type=image,name=harbor-registry.harbor.svc.cluster.local:5000/app/app-image:latest,push=true
+        #command: [buildctl-daemonless.sh]
         env:
           - name: BUILDKITD_FLAGS
             value: --oci-worker-no-process-sandbox
-        args:
-          - build
-          - --frontend=dockerfile.v0
-          - --local
-          - context=/src
-          - --local
-          - dockerfile=/src
-          - --output
-          - type=docker,dest=/tmp/image.tar
-          - --output
-          - type=image,name=harbor-registry.harbor.svc.cluster.local:5000/app/app-image:latest,push=true
+        #args:
+        #  - build
+        #  - --frontend=dockerfile.v0
+        #  - --local
+        #  - context=/src
+        #  - --local
+        #  - dockerfile=/src
+        #  - --output
+        #  - type=docker,dest=/tmp/image.tar
+        #  - --output
+        #  - type=image,name=harbor-registry.harbor.svc.cluster.local:5000/app/app-image:latest,push=true
         workingDir: /src
