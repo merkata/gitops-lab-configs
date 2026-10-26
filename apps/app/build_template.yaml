@@ -38,4 +38,6 @@ spec:
           - dockerfile=/src
           - --output
           - type=docker,dest=/tmp/image.tar
+          - --output
+          - type=image,name=harbor.harbor.svc.cluster.local/app/app-image:latest,push=true
         workingDir: /src
