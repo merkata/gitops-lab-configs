@@ -17,7 +17,7 @@ spec:
       outputs:
         artifacts:
           - name: app-image
-            path: /src/image.tar
+            path: /tmp/argo/outputs/artifacts/image.tar
             s3:
               key: app-image
       metadata:
@@ -29,5 +29,6 @@ spec:
         args:
           - build
           - --output
-          - type=docker,dest=/src/image.tar
+          - type=docker,dest=/tmp/argo/outputs/artifacts/image.tar
         workingDir: /src
+        tempOutArtDir: /tmp/argo/outputs/artifacts
