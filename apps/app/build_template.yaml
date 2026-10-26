@@ -29,6 +29,10 @@ spec:
         args:
           - build
           - --frontend=dockerfile.v0
+          - --local
+          - context=/src
+          - --local
+          - dockerfile=/src
           - --output
           - type=docker,dest=/tmp/image.tar
         workingDir: /src
