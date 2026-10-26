@@ -31,4 +31,3 @@ spec:
           - --output
           - type=docker,dest=/tmp/argo/outputs/artifacts/image.tar
         workingDir: /src
-        tempOutArtDir: /tmp/argo/outputs/artifacts
