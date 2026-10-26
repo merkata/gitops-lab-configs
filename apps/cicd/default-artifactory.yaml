@@ -19,4 +19,4 @@ data:
         key: password
       insecure: true
       bucket: workflows
-      endpoint: http://silo.silo.svc.cluster.local:9000
+      endpoint: silo.silo.svc.cluster.local:9000
