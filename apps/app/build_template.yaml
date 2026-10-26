@@ -20,6 +20,9 @@ spec:
             path: /src/image.tar
             s3:
               key: app-image
+      metadata:
+        annotations:
+          container.apparmor.security.beta.kubernetes.io/main: unconfined
       container:
         image: moby/buildkit:rootless
         command: [buildctl-daemonless.sh]
