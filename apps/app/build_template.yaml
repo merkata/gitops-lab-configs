@@ -34,6 +34,17 @@ spec:
               http = true
               insecure = true
             EOF
+            mkdir -p ~/.docker
+            B64_AUTH=$(echo -n "${HARBOR_USERNAME}:${HARBOR_PASSWORD}" | base64 | tr -d '\n')
+            cat <<EOF > ~/.docker/config.json
+            {
+              "auths": {
+                "harbor-registry.harbor.svc.cluster.local:5000": {
+                  "auth": "${B64_AUTH}"
+                }
+              }
+            }
+            EOF
             exec buildctl-daemonless.sh build \
               --frontend=dockerfile.v0 \
               --local context=/src \
@@ -44,6 +55,16 @@ spec:
         env:
           - name: BUILDKITD_FLAGS
             value: --oci-worker-no-process-sandbox
+          - name: HARBOR_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: harbor-registry-credentials
+                key: username
+          - name: HARBOR_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: harbor-registry-credentials
+                key: password
         #args:
         #  - build
         #  - --frontend=dockerfile.v0
