@@ -1,0 +1,20 @@
+---
+# Harbor admin credentials used by the chart and the bootstrap Job.
+# Sealed with the lab key from cncf-lab/gitops/sealed-secrets-key.yaml.
+# Replace the password and re-seal to rotate it.
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: harbor-admin
+  namespace: harbor
+  annotations:
+    # Create the Secret before the Harbor chart resources start.
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  encryptedData:
+    HARBOR_ADMIN_PASSWORD: AgARWgWNLwVZZEKzy4IJE2CCSrA7JYX2dTdZvCudsNDEQ+1StIoKzhT63pcTZRztP2qwGd0XICvCD6g9FDrt96hiXlqbGKhxDMnAMbkNAYbRfgSCW9KECckDHSic+8nsg/PYtTy5uPTqSraiIfbvpFoXB9oLEW8oOuuUaFkIe4GVLen5K9hxvUPeDYypXAEpaP6V0QHqk+sjkOVPMmeyPFVYf+yns2XDRpi8UyFPn3adKqoOI17xklQtYCwpxIU+fBXNJxa4nUotewHQpwsXOARxdoBmKyahI2DKi7ASHedJYKK53qDTv3eLWeS0sk6mAJR+J7hEACxkVsgSKoysUyT9b5Q6g0nXBwVIanhUSAVcj9DIJOANkLsPKTudLl6l8ilWyc2M5agJqEaCgEaCG+N84M9TY9Kks26EHPbsf32IecCipAlKJ4Baoq7g8YYwlEIC4rEUSwhrovhzgWy6ly/XVkrqKrkHBANMgsTBy2+u65VlrnQq+inNVWZ6FgygA0bwPKrSMwCvF9F/k+D4L+0CiWW80ts7sYvxv5kmIyvLUsCg7ut2kAVwFaCvZIzarhuhD1Ch3/ytROY8MPbr9u7smTEYRP2DL4eeyQX8RQdc+I2d0mYy0e7jBWY3tqDCC21Ju8K1RWKQQYlvtKRR077wYW4NiE7P+F/NhC6N/HwoQFzvoYdmg/utjP1iv9qQj/7qRkyywpnIKqVzQA==
+  template:
+    metadata:
+      name: harbor-admin
+      namespace: harbor
+    type: Opaque

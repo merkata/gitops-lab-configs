@@ -4,46 +4,58 @@ metadata:
   name: harbor
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "-1"
+    # Apply after the sealed-secrets CRD/controller has been installed by
+    # base-apps (this app contains SealedSecrets for the admin and robot users).
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   project: default
-  source:
-    repoURL: 'https://helm.goharbor.io'
-    chart: harbor
-    targetRevision: '1.19.4'
-    helm:
-      values: |
-        expose:
-          type: clusterIP
-          tls:
+  sources:
+    - repoURL: 'https://helm.goharbor.io'
+      chart: harbor
+      targetRevision: '1.19.4'
+      helm:
+        values: |
+          expose:
+            type: clusterIP
+            tls:
+              enabled: false
+
+          externalURL: "http://harbor.127.0.0.1.nip.io"
+
+          # Use the SealedSecret defined in apps/harbor/harbor-admin-sealed.yaml
+          # instead of the chart's public default admin password.
+          existingSecretAdminPassword: harbor-admin
+          existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD
+
+          trivy:
             enabled: false
 
-        externalURL: "http://harbor.127.0.0.1.nip.io"
+          chartmuseum:
+            enabled: false
 
-        trivy:
-          enabled: false
+          notary:
+            enabled: false
 
-        chartmuseum:
-          enabled: false
-
-        notary:
-          enabled: false
-
-        persistence:
-          enabled: false
-        #  persistentVolumeClaim:
-        #    registry:
-        #      storageClass: ""
-        #      size: 5Gi
-        #    database:
-        #      storageClass: ""
-        #      size: 1Gi
-        #    redis:
-        #      storageClass: ""
-        #      size: 1Gi
-        #    jobservice:
-        #      storageClass: ""
-        #      size: 1Gi
+          persistence:
+            enabled: false
+          #  persistentVolumeClaim:
+          #    registry:
+          #      storageClass: ""
+          #      size: 5Gi
+          #    database:
+          #      storageClass: ""
+          #      size: 1Gi
+          #    redis:
+          #      storageClass: ""
+          #      size: 1Gi
+          #    jobservice:
+          #      storageClass: ""
+          #      size: 1Gi
+    # Harbor bootstrap resources (admin secret, robot credentials, PostSync Job)
+    # are kept in this Application so PostSync runs after Harbor is healthy.
+    - repoURL: 'https://github.com/merkata/gitops-lab-configs.git'
+      targetRevision: HEAD
+      path: apps/harbor
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: harbor
@@ -53,3 +65,7 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      # The SealedSecrets in this app need the sealed-secrets CRD. It is
+      # installed by base-apps, but skip the dry-run during the short window
+      # where discovery may not have caught up yet.
+      - SkipDryRunOnMissingResource=true

@@ -1,0 +1,191 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: harbor-bootstrap-project-and-robot
+  namespace: harbor
+  annotations:
+    # Run after Harbor itself is healthy. The Job is idempotent, so it is safe
+    # to run on every sync.
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: harbor-bootstrap
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      containers:
+        - name: bootstrap
+          image: alpine:3.20.3
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+
+              # For production, build and pin an image with curl/jq preinstalled
+              # and run it as a non-root user.
+              apk add --no-cache curl jq >/dev/null
+
+              HARBOR_URL="${HARBOR_URL:-http://harbor.harbor.svc.cluster.local}"
+              API="${HARBOR_URL}/api/v2.0"
+              PROJECT="${HARBOR_PROJECT:-app}"
+              ROBOT_SHORT_NAME="${HARBOR_ROBOT_SHORT_NAME:-ci}"
+              ROBOT_USERNAME="${HARBOR_ROBOT_USERNAME}"
+              ROBOT_PASSWORD="${HARBOR_ROBOT_PASSWORD}"
+
+              echo "Waiting for the Harbor API..."
+              code=""
+              for _ in $(seq 1 60); do
+                code=$(curl -sS -o /dev/null -w '%{http_code}' "${API}/systeminfo" || true)
+                if [ "$code" = "200" ]; then
+                  break
+                fi
+                sleep 5
+              done
+              if [ "$code" != "200" ]; then
+                echo "Harbor API is not ready (last HTTP status: ${code})" >&2
+                exit 1
+              fi
+
+              auth_code=$(curl -sS -o /dev/null -w '%{http_code}' \
+                -u "${HARBOR_USERNAME}:${HARBOR_ADMIN_PASSWORD}" \
+                "${API}/projects?page_size=1" || true)
+              if [ "$auth_code" != "200" ]; then
+                echo "Harbor admin authentication failed (HTTP ${auth_code})" >&2
+                exit 1
+              fi
+
+              project_code=$(curl -sS -o /dev/null -w '%{http_code}' \
+                -u "${HARBOR_USERNAME}:${HARBOR_ADMIN_PASSWORD}" \
+                "${API}/projects/${PROJECT}" || true)
+              case "$project_code" in
+                200)
+                  echo "Harbor project ${PROJECT} already exists"
+                  ;;
+                404)
+                  echo "Creating Harbor project ${PROJECT}"
+                  project_body=$(jq -n --arg name "$PROJECT" \
+                    '{project_name: $name, public: false}')
+                  curl -fsS -u "${HARBOR_USERNAME}:${HARBOR_ADMIN_PASSWORD}" \
+                    -X POST \
+                    -H 'Content-Type: application/json' \
+                    -d "$project_body" \
+                    "${API}/projects" >/dev/null
+                  ;;
+                *)
+                  echo "Unexpected response while checking project ${PROJECT} (HTTP ${project_code})" >&2
+                  exit 1
+                  ;;
+              esac
+
+              permissions=$(jq -n --arg project "$PROJECT" \
+                '[{
+                  kind: "project",
+                  namespace: $project,
+                  access: [
+                    {resource: "repository", action: "pull"},
+                    {resource: "repository", action: "push"}
+                  ]
+                }]')
+
+              echo "Looking for robot ${ROBOT_USERNAME}..."
+              robots=$(curl -fsS -u "${HARBOR_USERNAME}:${HARBOR_ADMIN_PASSWORD}" \
+                "${API}/robots?page_size=100")
+              robot_id=$(printf '%s' "$robots" | \
+                jq -r --arg name "$ROBOT_USERNAME" '.[] | select(.name == $name) | .id' | \
+                head -n 1)
+
+              if [ -z "$robot_id" ]; then
+                echo "Creating robot ${ROBOT_SHORT_NAME} in project ${PROJECT}"
+                create_body=$(jq -n \
+                  --arg name "$ROBOT_SHORT_NAME" \
+                  --arg description "Argo Workflows image push" \
+                  --argjson permissions "$permissions" \
+                  '{
+                    name: $name,
+                    description: $description,
+                    level: "project",
+                    duration: -1,
+                    permissions: $permissions
+                  }')
+                created=$(curl -fsS -u "${HARBOR_USERNAME}:${HARBOR_ADMIN_PASSWORD}" \
+                  -X POST \
+                  -H 'Content-Type: application/json' \
+                  -d "$create_body" \
+                  "${API}/robots")
+                robot_id=$(printf '%s' "$created" | jq -r '.id')
+                created_name=$(printf '%s' "$created" | jq -r '.name')
+                if [ "$created_name" != "$ROBOT_USERNAME" ]; then
+                  echo "Robot created as ${created_name}, but the sealed secret expects ${ROBOT_USERNAME}." >&2
+                  echo "Update HARBOR_ROBOT_USERNAME / the sealed secret to match the Harbor robot-name prefix." >&2
+                  exit 1
+                fi
+              else
+                echo "Robot ${ROBOT_USERNAME} already exists (id ${robot_id})"
+                update_body=$(jq -n \
+                  --arg name "$ROBOT_USERNAME" \
+                  --arg description "Argo Workflows image push" \
+                  --argjson permissions "$permissions" \
+                  '{
+                    name: $name,
+                    description: $description,
+                    level: "project",
+                    duration: -1,
+                    disable: false,
+                    permissions: $permissions
+                  }')
+                curl -fsS -u "${HARBOR_USERNAME}:${HARBOR_ADMIN_PASSWORD}" \
+                  -X PUT \
+                  -H 'Content-Type: application/json' \
+                  -d "$update_body" \
+                  "${API}/robots/${robot_id}" >/dev/null
+              fi
+
+              # Harbor generates a random secret on create. Force it to the
+              # value that is sealed for the Argo Workflow, so the Job is
+              # deterministic and can rotate the robot password on every sync.
+              echo "Synchronizing robot secret..."
+              secret_body=$(jq -n --arg secret "$ROBOT_PASSWORD" '{secret: $secret}')
+              curl -fsS -u "${HARBOR_USERNAME}:${HARBOR_ADMIN_PASSWORD}" \
+                -X PATCH \
+                -H 'Content-Type: application/json' \
+                -d "$secret_body" \
+                "${API}/robots/${robot_id}" >/dev/null
+
+              echo "Harbor project ${PROJECT} and robot ${ROBOT_USERNAME} are ready"
+          env:
+            - name: HARBOR_URL
+              value: http://harbor.harbor.svc.cluster.local
+            - name: HARBOR_USERNAME
+              value: admin
+            - name: HARBOR_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: harbor-admin
+                  key: HARBOR_ADMIN_PASSWORD
+            - name: HARBOR_PROJECT
+              value: app
+            - name: HARBOR_ROBOT_SHORT_NAME
+              value: ci
+            - name: HARBOR_ROBOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: harbor-registry-credentials
+                  key: username
+            - name: HARBOR_ROBOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: harbor-registry-credentials
+                  key: password
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
