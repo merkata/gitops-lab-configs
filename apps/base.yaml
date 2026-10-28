@@ -9,10 +9,19 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: 'https://github.com/merkata/gitops-lab-configs.git'
-    targetRevision: HEAD
-    path: apps/base
+  sources:
+    - repoURL: 'https://github.com/merkata/gitops-lab-configs.git'
+      targetRevision: HEAD
+      path: apps/base
+    # Keep the SealedSecrets CRD in this Application, alongside the SealedSecret
+    # resources. Argo CD performs a dry-run of all manifests in an Application
+    # before applying anything; if the CRD is part of the same sync, Argo CD
+    # knows the SealedSecret kind and orders the CRD first.
+    # Keep this tag aligned with the sealed-secrets chart appVersion:
+    # chart 2.20.0 -> sealed-secrets 0.40.0.
+    - repoURL: 'https://github.com/bitnami-labs/sealed-secrets.git'
+      targetRevision: 'v0.40.0'
+      path: helm/sealed-secrets/crds
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argocd

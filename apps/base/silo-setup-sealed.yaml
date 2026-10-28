@@ -5,7 +5,7 @@ metadata:
   name: silo-user
   namespace: silo
   annotations:
-    argocd.argoproj.io/sync-wave: "-2"
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   encryptedData:
     password: AgBm+xdIbSm6O6u6vxGIaDd6zDOBuKjXWSglF9tnmcutnhK+nZRvHKx1F5CRSi/pc9KVs2PzhJggR0Pe+bzaZwXGGK9NmtOsV4kx1LDmE3XXSYMOMKtj86eJp3jsrDhBzLEuVsbshZ2wjB5lKR21UQc89KU/D35jIAQpikOUCqtWWsuDKAbCqZn0CKjqJpBC1bdr56l//Zxco+sCjAt8u9lOFf6XfgYCSHRTifPPqy7BTFEq8S5Lpy7O6A17BBP7jFAEcuyYseKiFJKyuPZZm5xl/yys+0jqGTYXQVLhNPFtRacVkMv/LNHrlNG+BGAIGwFpZ40MyBtkblKt4GalNM8sYHXGWKX0XZkfLozRAXMD2Q1MJZlAPe1c/fqRiRabzmjnCnsn5vvVf8RpJz6ALnE5DuuG5knWbhBal+dLCb4gQZxEmTzDPHSMxnEZer54YiGq9sO2XpUUIC+6cD/CnF4jywiXFdD7asl6Ifkk2gvBawQgtKdE4o0W7/jjGT3GCjv6yqr2wuvSKv8aEeq+U0Jh36y2VLS6tybjXKv4YY2W41ETIQbUpU+CvxOdIoKiNgAqrBpRRCs2ZCSUnG2muQyp0eubCF1PSGnKx9zq4Q1W5OJ4iaUvECkuY4z8f+pImyAExggg9c3seVbPrd+9mabSZfh5TfPHrSliklHIFOcdpEXvR2Mvy35gvUHG3hYe0USE8WWl7MqDZpE=
@@ -21,7 +21,7 @@ metadata:
   name: silo-svcact
   namespace: silo
   annotations:
-    argocd.argoproj.io/sync-wave: "-2"
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   encryptedData:
     password: AgCPHxKfaYPCTx0g7AfFnJOF5o77y4qmnhlYjMCxRpIBTEbP0VTIVN9ykKAYqYZYcgBvWNlvy/cGdsFY1JO3RQuBwmZKICeVKBW39g1EPEXEtMseX5GESdO03giJ2n96sWcFXW3YmrvOw18o71Y93ZxR8rGcozNT8Vrm4ALD/Xma7NQxCGdl6E3lIP2HpuW/TcGENpgrJ/O0z0176wWAKG+co9mRT/vhw6RUSiaZ9IbfrJPzdY5RaaWIkJIX8SZCJstsl2yYEn/L5s7dvFexctQyubpgQvbP2v1eMShyK8kDBdnma9RFpPJhv/pTje8j3xyLVxr3X1wdrh/Pe0zLbJbL5OacX3uwI630MpBaUQVg7ZqXJ6leER9LvQhTiLtuTqMxsdk2YMWOUTHW3v9MXUy2Y9va5n4FVaTiYUsVEG1/5qlLfIJGFViEDr8+ZWO8gqlXlIQod6edQdrO1dgXhAHf1KOoANXNUkuoiG5+ChtqEYPhi9kbK/4KEIV0tBO+yoVLC7ezT+DS6StWya/ls4tORP6/XKvJ9TZ/Shj9y/uqyE/UG9CJbcdykg0Xd3tZuzOI8bkxK7ykyCAn2LzA8PadX7B6uwh8+CvsHWRCGwPreSgASU8XH4ZdWik9Df8qQC0inRbnyWMLGMS+rfItyJGV4YS3dOxAsz1BxsT5KHxHm01aBhqVqVN8f6fOPCNEbu/wx9qvQ5Yhids=

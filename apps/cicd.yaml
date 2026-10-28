@@ -22,3 +22,6 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      # The sealed-secrets CRD is installed by base-apps. Skip the dry-run if
+      # this app is reconciled before the CRD is visible to discovery.
+      - SkipDryRunOnMissingResource=true
