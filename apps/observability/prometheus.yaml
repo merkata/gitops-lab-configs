@@ -17,6 +17,15 @@ spec:
           extraFlags:
             - "web.enable-otlp-receiver"
             - "web.enable-remote-write-receiver"
+          route:
+            main:
+              enabled: true
+              parentRefs:
+                - name: lab
+                  namespace: platform
+                  sectionName: http
+              hostnames:
+                - prometheus.127.0.0.1.nip.io
         alertmanager:
           enabled: false
         prometheus-pushgateway:

@@ -21,8 +21,24 @@ spec:
         persistence:
           enabled: false
 
+        gatewayAPI:
+          enabled: true
+          core:
+            httpRoute:
+              enabled: true
+              parentRefs:
+                - name: lab
+                  namespace: platform
+                  sectionName: http
+              hostnames:
+                - gitea.127.0.0.1.nip.io
+
         gitea:
           config:
+            server:
+              DOMAIN: gitea.127.0.0.1.nip.io
+              ROOT_URL: http://gitea.127.0.0.1.nip.io/
+              SSH_DOMAIN: gitea.127.0.0.1.nip.io
             database:
               DB_TYPE: sqlite3
             session:

@@ -18,7 +18,7 @@ spec:
           tls:
             enabled: false
 
-        externalURL: "http://harbor.local"
+        externalURL: "http://harbor.127.0.0.1.nip.io"
 
         trivy:
           enabled: false

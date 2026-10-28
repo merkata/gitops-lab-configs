@@ -36,6 +36,15 @@ spec:
             preinstall_sync: >-
               jaegertracing-jaeger-datasource@0.4.1@https://github.com/jaegertracing/grafana-plugin/releases/download/v0.4.1/jaegertracing-jaeger-datasource-0.4.1.zip
             allow_loading_unsigned_plugins: jaegertracing-jaeger-datasource
+        route:
+          main:
+            enabled: true
+            parentRefs:
+              - name: lab
+                namespace: platform
+                sectionName: http
+            hostnames:
+              - grafana.127.0.0.1.nip.io
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: observability

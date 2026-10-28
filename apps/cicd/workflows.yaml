@@ -32,6 +32,14 @@ spec:
           endpoint: http://silo.silo.svc.cluster.local:9000
         server:
           authModes: [server]
+          httproute:
+            enabled: true
+            parentRefs:
+              - name: lab
+                namespace: platform
+                sectionName: http
+            hostnames:
+              - argo.127.0.0.1.nip.io
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argo-workflows
