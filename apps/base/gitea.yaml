@@ -4,49 +4,59 @@ metadata:
   name: gitea
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "-1"
+    # Apply after the sealed-secrets CRD/controller has been installed by
+    # base-apps (the SealedSecret for Gitea admin credentials is in this app).
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   project: default
-  source:
-    repoURL: 'https://dl.gitea.com/charts/'
-    chart: gitea
-    targetRevision: '12.7.0'
-    helm:
-      values: |
-        valkey:
-          enabled: false
-        cloudnativePG:
-          enabled: false
+  sources:
+    - repoURL: 'https://dl.gitea.com/charts/'
+      chart: gitea
+      targetRevision: '12.7.0'
+      helm:
+        values: |
+          valkey:
+            enabled: false
+          cloudnativePG:
+            enabled: false
 
-        persistence:
-          enabled: false
+          persistence:
+            enabled: false
 
-        gatewayAPI:
-          enabled: true
-          core:
-            httpRoute:
-              enabled: true
-              parentRefs:
-                - name: lab
-                  namespace: platform
-                  sectionName: http
-              hostnames:
-                - gitea.127.0.0.1.nip.io
+          gatewayAPI:
+            enabled: true
+            core:
+              httpRoute:
+                enabled: true
+                parentRefs:
+                  - name: lab
+                    namespace: platform
+                    sectionName: http
+                hostnames:
+                  - gitea.127.0.0.1.nip.io
 
-        gitea:
-          config:
-            server:
-              DOMAIN: gitea.127.0.0.1.nip.io
-              ROOT_URL: http://gitea.127.0.0.1.nip.io/
-              SSH_DOMAIN: gitea.127.0.0.1.nip.io
-            database:
-              DB_TYPE: sqlite3
-            session:
-              PROVIDER: memory
-            cache:
-              ADAPTER: memory
-            queue:
-              TYPE: level
+          gitea:
+            admin:
+              # Use the same credentials as the bootstrap Job. The secret is
+              # defined in apps/gitea/gitea-admin-sealed.yaml.
+              existingSecret: gitea-admin
+            config:
+              server:
+                DOMAIN: gitea.127.0.0.1.nip.io
+                ROOT_URL: http://gitea.127.0.0.1.nip.io/
+                SSH_DOMAIN: gitea.127.0.0.1.nip.io
+              database:
+                DB_TYPE: sqlite3
+              session:
+                PROVIDER: memory
+              cache:
+                ADAPTER: memory
+              queue:
+                TYPE: level
+    # Bootstrap resources (admin secret + PostSync Job) live in this repo.
+    - repoURL: 'https://github.com/merkata/gitops-lab-configs.git'
+      targetRevision: HEAD
+      path: apps/gitea
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: gitea
@@ -56,3 +66,7 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      # The SealedSecret in this app needs the sealed-secrets CRD. It is
+      # installed by base-apps, but skip the dry-run during the short window
+      # where discovery may not have caught up yet.
+      - SkipDryRunOnMissingResource=true

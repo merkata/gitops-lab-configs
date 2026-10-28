@@ -1,0 +1,187 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gitea-bootstrap-app
+  namespace: gitea
+  annotations:
+    # Run after Gitea itself is healthy. The Job is idempotent, so it is safe
+    # to run on every sync.
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gitea-bootstrap
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      containers:
+        - name: bootstrap
+          image: alpine:3.20.3
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+
+              # Keep the image small but self-contained. For production, build
+              # and pin an image with git/curl preinstalled and run it non-root.
+              apk add --no-cache git curl >/dev/null
+
+              GITEA_URL="${GITEA_URL:-http://gitea-http.gitea.svc.cluster.local:3000}"
+              GITEA_OWNER="${GITEA_OWNER:-$GITEA_USERNAME}"
+              GITEA_REPO="${GITEA_REPO:-app}"
+              GITEA_DEFAULT_BRANCH="${GITEA_DEFAULT_BRANCH:-main}"
+              REPO_URL="${GITEA_URL}/${GITEA_OWNER}/${GITEA_REPO}.git"
+              API="${GITEA_URL}/api/v1"
+
+              echo "Waiting for the Gitea API..."
+              code=""
+              for _ in $(seq 1 60); do
+                code=$(curl -sS -o /dev/null -w '%{http_code}' "${API}/version" || true)
+                if [ "$code" = "200" ]; then
+                  break
+                fi
+                sleep 5
+              done
+              if [ "$code" != "200" ]; then
+                echo "Gitea API is not ready (last HTTP status: ${code})" >&2
+                exit 1
+              fi
+
+              auth_code=$(curl -sS -o /dev/null -w '%{http_code}' \
+                -u "${GITEA_USERNAME}:${GITEA_PASSWORD}" "${API}/user" || true)
+              if [ "$auth_code" != "200" ]; then
+                echo "Gitea authentication failed (HTTP ${auth_code})" >&2
+                exit 1
+              fi
+
+              repo_code=$(curl -sS -o /dev/null -w '%{http_code}' \
+                -u "${GITEA_USERNAME}:${GITEA_PASSWORD}" \
+                "${API}/repos/${GITEA_OWNER}/${GITEA_REPO}" || true)
+
+              case "$repo_code" in
+                200)
+                  echo "Repository ${GITEA_OWNER}/${GITEA_REPO} already exists"
+                  ;;
+                404)
+                  echo "Creating repository ${GITEA_OWNER}/${GITEA_REPO}"
+                  if [ "$GITEA_OWNER" = "$GITEA_USERNAME" ]; then
+                    create_url="${API}/user/repos"
+                  else
+                    create_url="${API}/admin/users/${GITEA_OWNER}/repos"
+                  fi
+                  curl -fsS -u "${GITEA_USERNAME}:${GITEA_PASSWORD}" \
+                    -X POST \
+                    -H 'Content-Type: application/json' \
+                    -d "{\"name\":\"${GITEA_REPO}\",\"private\":false,\"auto_init\":true,\"default_branch\":\"${GITEA_DEFAULT_BRANCH}\"}" \
+                    "${create_url}" >/dev/null
+                  ;;
+                *)
+                  echo "Unexpected response while checking the repository (HTTP ${repo_code})" >&2
+                  exit 1
+                  ;;
+              esac
+
+              # Never put the password in the git URL or on the command line.
+              # GIT_ASKPASS supplies it from the environment when git asks.
+              cat > /tmp/askpass.sh <<'ASKPASS'
+              #!/bin/sh
+              case "$1" in
+                *Username*) printf '%s\n' "$GITEA_USERNAME" ;;
+                *Password*) printf '%s\n' "$GITEA_PASSWORD" ;;
+              esac
+              ASKPASS
+              chmod +x /tmp/askpass.sh
+              export GIT_ASKPASS=/tmp/askpass.sh
+              export GIT_TERMINAL_PROMPT=0
+
+              rm -rf /tmp/dst /tmp/src
+
+              # The repo may just have been created; give Gitea a moment to
+              # initialize it before cloning.
+              tries=0
+              until git clone --depth=1 "$REPO_URL" /tmp/dst; do
+                tries=$((tries + 1))
+                if [ "$tries" -ge 10 ]; then
+                  echo "Unable to clone ${REPO_URL}" >&2
+                  exit 1
+                fi
+                sleep 2
+              done
+
+              if [ -f /tmp/dst/main.go ]; then
+                echo "App files already exist in ${GITEA_OWNER}/${GITEA_REPO}; skipping seed"
+                exit 0
+              fi
+
+              # Remember which branch to push to. Empty repos have no HEAD yet,
+              # so use the branch configured when the repo was created.
+              if git -C /tmp/dst rev-parse --verify HEAD >/dev/null 2>&1; then
+                branch=$(git -C /tmp/dst symbolic-ref --short HEAD 2>/dev/null || true)
+              else
+                branch="$GITEA_DEFAULT_BRANCH"
+              fi
+              if [ -z "$branch" ] || [ "$branch" = "HEAD" ]; then
+                branch="$GITEA_DEFAULT_BRANCH"
+              fi
+
+              echo "Fetching source ${SOURCE_REPO} at ${SOURCE_REF}"
+              mkdir -p /tmp/src
+              cd /tmp/src
+              git init -q
+              git remote add origin "$SOURCE_REPO"
+              git fetch --depth=1 origin "$SOURCE_REF"
+              git checkout -q FETCH_HEAD
+
+              cp -R "/tmp/src/${SOURCE_SUBDIR}/." /tmp/dst/
+
+              cd /tmp/dst
+              git add .
+              if git diff --cached --quiet; then
+                echo "No changes to commit"
+                exit 0
+              fi
+
+              git -c user.name="gitea-bootstrap" \
+                  -c user.email="gitea-bootstrap@localhost" \
+                  commit -m "Bootstrap app from ${SOURCE_REPO}@${SOURCE_REF}"
+
+              git push origin "HEAD:${branch}"
+              echo "Bootstrapped ${GITEA_OWNER}/${GITEA_REPO} on branch ${branch}"
+          env:
+            - name: GITEA_URL
+              value: http://gitea-http.gitea.svc.cluster.local:3000
+            - name: GITEA_OWNER
+              value: gitea_admin
+            - name: GITEA_REPO
+              value: app
+            - name: GITEA_DEFAULT_BRANCH
+              value: main
+            - name: GITEA_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: gitea-admin
+                  key: username
+            - name: GITEA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gitea-admin
+                  key: password
+            - name: SOURCE_REPO
+              value: https://github.com/merkata/cncf-lab.git
+            # Pin the source revision so the bootstrap result is reproducible.
+            - name: SOURCE_REF
+              value: aefc730821b463742d58f902e19661f7a19840f1
+            - name: SOURCE_SUBDIR
+              value: app
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi

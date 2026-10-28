@@ -1,0 +1,21 @@
+---
+# Sealed with the lab's sealed-secrets key from cncf-lab/gitops/sealed-secrets-key.yaml.
+# This keeps the chart and the bootstrap Job on the same admin credential.
+# Rotate it by creating a new Secret and re-running kubeseal for namespace gitea.
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: gitea-admin
+  namespace: gitea
+  annotations:
+    # Create the Secret before the Gitea Deployment starts.
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  encryptedData:
+    password: AgCuJRrXFJNUhEzQty+3ut36vBe3x51YB3H9XScoeOaySj4Vt2uZonvij3o95d+mE8BIPKrQDgZuMKyho0nf4Qoeo+vXrRcAWkLnwd5f0bUh7gzOD2SwPPmRFBjGQGVlIG53Wp6AxLML3z5QC07z0Fa639Zh8RZPlPv38rX8ooO47BTs9a1fXrUSIEkagmXXPPPEDi9rPt9rYTARKItGRMVMjVpAR6LnPkGWV3TqyjHpGvo/d6XbI6hnprl76FEO7yoakCVKG2PjS7gPwf2GVxkqa2S418IYUVOfsgXzv/Dvlj0SIBKz7KGjB4YQbgVD7uHSSUbjpKNCqLHqTc9P/xR0lHF2u8egj78aNsD3KEdZTi/3GEE0OaqX7znV514b5/FGbbU3TPhsYFWbbGh6faV/p7weYNOjQx9mcHj5dlmJrO8NkCsNMa6XP6V7oWXsbZYxuAa8i5fAgDD5u9FDr8JvTlRPzaKu1BP7JOY43TjV8Wui0uEAVycsywTlCH6fBlZ9apvuystMk/0qKLUCjG7pLI3gV969V4DnNh0eUVks2q7dSxIv1/wC+E1KP8mKLrpf+SnXY566QdWPSJyD9tiwBUtNGiewzIhTAXVbnC5e/ZoJXhdLj0NKEhqOZ/306HTM86iDRvpkKe6GS33HQfb0gfUA60LGS6mVaCuYEe6MijyLqBAWiyp1FfDyqDyaFC8HY+0/gFlJRbN78le0frI=
+    username: AgAXjebQpNVM+44gs0oRE6k6ish94G5El8h59rh/xDPMKKsiDo6+6sDnCmNyyeVjY0nZZOTmq6A5gi6D9H8+8d2JNndUNIsaYEclMWE3UYPlo3Lsg3BcZQjt6VVMD7DSlWft7qy7M7NyvJKKAtBGIi6rKeTP239A2G/6ECpZk3zGNr9f6+DWPKvx1mmkeIsSEmRjldgvxThJ9mLXAn5Py5+bFnOcgrCpmQMsXOY0SlNnP042lFhcgLB1f12qc8EVBnBb/MNqDxx/T2pDZfhxTb9mikjh9wvJvCD5N3hkjNGBb3+0/8H0K76v9S8B8AJCHKk3q99nvdgi13TcBVGO767Eho3Z95oYbN2gECCu4CnqoFE//NS1PpHqYK6jzt94Ox4DtQNdqlISiAyslu5RiekFgC/zT9QOrGsZ9pxiKzsSQC+nn4JK752lf7LqRe2tkbNhCRKsXYaufa6oBo5t1ky1YbAaYq4dhju+ApH4ba4zLwR9yhaepWhNvNNUczaJd/5Qx9VMBX6xyfVmCRNeNlDsAKZQF5Z5Dxc1FP/3eoonL73tbG5VQr2fqUhwJ1Wmzhb8i2If0gztFTaas0sK14EQ7PaL+VjYH5cVlCT6gUtFZLuKRru0XVisnkA38PC6cMCqaZ7zKcjk+qdDRFH0bEcbByrcj8b1rUg2S7xvjqoXWAXTtsKdWo8DvazC/7ri9HP6WjDE5AcbTzzzxw==
+  template:
+    metadata:
+      name: gitea-admin
+      namespace: gitea
+    type: Opaque
