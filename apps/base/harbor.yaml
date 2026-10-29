@@ -19,6 +19,12 @@ spec:
             type: clusterIP
             tls:
               enabled: false
+            # Keep this in sync with HARBOR_CLUSTER_IP in the cncf-lab
+            # bootstrap.sh. The kind node /etc/hosts entry makes the Harbor
+            # service name resolvable by containerd, which does not use
+            # cluster DNS for image pulls.
+            clusterIP:
+              staticClusterIP: 10.96.0.100
 
           externalURL: "http://harbor.127.0.0.1.nip.io"
 
