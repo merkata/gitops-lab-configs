@@ -1,0 +1,74 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: image-updater
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: 'https://argoproj.github.io/argo-helm'
+    chart: argocd-image-updater
+    targetRevision: '1.3.2'
+    helm:
+      values: |
+        # Watch only the argocd namespace, where the Application and
+        # ImageUpdater CRs live.
+        createClusterRoles: false
+        config:
+          argocd.namespace: argocd
+          interval: 1m
+          log.level: info
+          git.user: argocd-image-updater
+          git.email: argocd-image-updater@localhost
+          registries:
+            - name: Harbor
+              prefix: harbor.harbor.svc.cluster.local
+              api_url: http://harbor.harbor.svc.cluster.local
+              insecure: true
+              credentials: pullsecret:argocd/harbor-registry-pull
+        crds:
+          annotations:
+            argocd.argoproj.io/sync-wave: "0"
+        extraObjects:
+          - apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+            kind: ImageUpdater
+            metadata:
+              name: test-app-image-updater
+              namespace: argocd
+              annotations:
+                argocd.argoproj.io/sync-wave: "1"
+            spec:
+              commonUpdateSettings:
+                updateStrategy: semver
+                # Rollout is a CRD; force the update even if Image Updater
+                # cannot discover the image from a standard workload.
+                forceUpdate: true
+              writeBackConfig:
+                method: "git:secret:gitea-git-credentials"
+                gitConfig:
+                  repository: http://gitea-http.gitea.svc.cluster.local:3000/gitea_admin/app.git
+                  branch: main
+              applicationRefs:
+                - namePattern: test-app
+                  images:
+                    - alias: appimage
+                      # No tag means "consider all semantic version tags".
+                      imageName: harbor.harbor.svc.cluster.local/app/app-image
+                      manifestTargets:
+                        kustomize:
+                          name: harbor.harbor.svc.cluster.local/app/app-image
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # The ImageUpdater CR is created in the same sync as its CRD.
+      - SkipDryRunOnMissingResource=true
