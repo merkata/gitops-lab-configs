@@ -1,0 +1,126 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gitea-sync-test-app
+  namespace: gitea
+  annotations:
+    # Run after main-app has reconciled so the Gitea-based test-app Application
+    # has a deploy/ directory to read. The Job only commits when the manifests
+    # actually change.
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gitea-sync-test-app
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      containers:
+        - name: sync
+          image: alpine:3.20.3
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+
+              apk add --no-cache git curl >/dev/null
+
+              GITEA_URL="${GITEA_URL:-http://gitea-http.gitea.svc.cluster.local:3000}"
+              GITEA_OWNER="${GITEA_OWNER:-gitea_admin}"
+              GITEA_REPO="${GITEA_REPO:-app}"
+              GITEA_BRANCH="${GITEA_BRANCH:-main}"
+              API="${GITEA_URL}/api/v1"
+              REPO_URL="${GITEA_URL}/${GITEA_OWNER}/${GITEA_REPO}.git"
+
+              echo "Waiting for the Gitea API..."
+              code=""
+              for _ in $(seq 1 60); do
+                code=$(curl -sS -o /dev/null -w '%{http_code}' "${API}/version" || true)
+                if [ "$code" = "200" ]; then
+                  break
+                fi
+                sleep 5
+              done
+              if [ "$code" != "200" ]; then
+                echo "Gitea API is not ready (last HTTP status: ${code})" >&2
+                exit 1
+              fi
+
+              cat > /tmp/askpass.sh <<'ASKPASS'
+              #!/bin/sh
+              case "$1" in
+                *Username*) printf '%s\n' "$GITEA_USERNAME" ;;
+                *Password*) printf '%s\n' "$GITEA_PASSWORD" ;;
+              esac
+              ASKPASS
+              chmod +x /tmp/askpass.sh
+              export GIT_ASKPASS=/tmp/askpass.sh
+              export GIT_TERMINAL_PROMPT=0
+
+              rm -rf /tmp/dst /tmp/src
+
+              # The gitea bootstrap Job may still be creating the source repo.
+              tries=0
+              until git clone --depth=1 "$REPO_URL" /tmp/dst; do
+                tries=$((tries + 1))
+                if [ "$tries" -ge 60 ]; then
+                  echo "Unable to clone ${REPO_URL}" >&2
+                  exit 1
+                fi
+                sleep 5
+              done
+
+              # The GitOps repository is the source of truth for the Rollout
+              # resources. ImageUpdater still writes only its generated
+              # .argocd-source-test-app.yaml file, which this copy leaves intact.
+              git clone --depth=1 "$GITOPS_REPO" /tmp/src
+
+              mkdir -p /tmp/dst/deploy
+              cp -R /tmp/src/apps/app/test-app/. /tmp/dst/deploy/
+
+              cd /tmp/dst
+              git add deploy
+              if git diff --cached --quiet; then
+                echo "test-app deployment manifests are already up to date"
+                exit 0
+              fi
+
+              git -c user.name="gitea-deploy-sync" \
+                  -c user.email="gitea-deploy-sync@localhost" \
+                  commit -m "Sync test-app deployment manifests"
+
+              git push origin "HEAD:${GITEA_BRANCH}"
+              echo "Synced test-app deployment manifests to ${GITEA_OWNER}/${GITEA_REPO}:${GITEA_BRANCH}/deploy"
+          env:
+            - name: GITEA_URL
+              value: http://gitea-http.gitea.svc.cluster.local:3000
+            - name: GITEA_OWNER
+              value: gitea_admin
+            - name: GITEA_REPO
+              value: app
+            - name: GITEA_BRANCH
+              value: main
+            - name: GITEA_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: gitea-admin
+                  key: username
+            - name: GITEA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gitea-admin
+                  key: password
+            - name: GITOPS_REPO
+              value: https://github.com/merkata/gitops-lab-configs.git
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi

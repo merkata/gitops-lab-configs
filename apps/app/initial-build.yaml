@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: initial-app-build
+  namespace: argo-workflows
+  annotations:
+    # Build the first image after main-app has synced the WorkflowTemplate and
+    # the Gitea repository has been bootstrapped. The Workflow is retained after
+    # success so later main-app syncs do not rebuild the initial tag.
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookFailed
+spec:
+  entrypoint: clone-and-build
+  # Gitea or Harbor may still be starting on a fresh cluster.
+  retryStrategy:
+    limit: 10
+    retryPolicy: Always
+    backoff:
+      duration: 10s
+      factor: 2
+      maxDuration: 5m
+  arguments:
+    parameters:
+      - name: body
+        value: '{"ref":"v0.0.0"}'
+  workflowTemplateRef:
+    name: clone-and-build

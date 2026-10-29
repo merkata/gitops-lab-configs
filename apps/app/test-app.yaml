@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: test-app
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    # The deployment manifests are seeded into this Gitea repository by the
+    # gitea-sync-test-app Job. Argo CD Image Updater writes image updates back
+    # to this same repository and path.
+    repoURL: http://gitea-http.gitea.svc.cluster.local:3000/gitea_admin/app.git
+    targetRevision: main
+    path: deploy
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: app
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 10
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - CreateNamespace=true
+      # The Rollout CRD is installed by the rollouts Application.
+      - SkipDryRunOnMissingResource=true

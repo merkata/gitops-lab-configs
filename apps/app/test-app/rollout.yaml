@@ -1,0 +1,59 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: test-app
+  namespace: app
+  labels:
+    app.kubernetes.io/name: test-app
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: test-app
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: test-app
+    spec:
+      imagePullSecrets:
+        - name: harbor-registry-pull
+      containers:
+        - name: app
+          # The initial tag is built by the initial-build Workflow hook in
+          # apps/app. Argo CD Image Updater changes this tag through the
+          # .argocd-source-test-app.yaml file committed to the Gitea repo.
+          image: harbor.harbor.svc.cluster.local/app/app-image:v0.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /greet
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /greet
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+  strategy:
+    canary:
+      steps:
+        - setWeight: 25
+        - pause:
+            duration: 30s
+        - setWeight: 50
+        - pause:
+            duration: 30s
+        - setWeight: 100
