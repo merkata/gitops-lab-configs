@@ -195,7 +195,7 @@ spec:
               value: https://github.com/merkata/cncf-lab.git
             # Pin the source revision so the bootstrap result is reproducible.
             - name: SOURCE_REF
-              value: aefc730821b463742d58f902e19661f7a19840f1
+              value: ec2fe64642a6a6e474090a8be819ed02dd12d5b8
             - name: SOURCE_SUBDIR
               value: app
           resources:
