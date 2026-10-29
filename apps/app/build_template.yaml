@@ -64,7 +64,7 @@ spec:
               --local context=/src \
               --local dockerfile=/src \
               --output type=docker,dest=/tmp/image.tar \
-              --output type=image,name=harbor.harbor.svc.cluster.local/app/app-image:{{=jsonpath(inputs.parameters.body, '$.ref')}},push=true
+              --output type=image,name=harbor.harbor.svc.cluster.local/app/app-image:{{=sprig.trimPrefix("refs/tags/", jsonpath(inputs.parameters.body, '$.ref'))}},push=true
         env:
           - name: BUILDKITD_FLAGS
             value: --oci-worker-no-process-sandbox --config /home/user/.config/buildkit/buildkitd.toml

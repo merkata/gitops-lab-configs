@@ -10,6 +10,15 @@ spec:
     - name: app-dep
       eventSourceName: webhook
       eventName: app
+      filters:
+        # Only tag pushes should build images. This also prevents the deploy
+        # manifest commits made by Argo CD Image Updater from triggering builds.
+        data:
+          - path: body.ref
+            type: string
+            value:
+              - '^refs/tags/'
+              - '^v[0-9]+\.[0-9]+\.[0-9]+'
   triggers:
     - template:
         name: webhook-workflow-trigger
