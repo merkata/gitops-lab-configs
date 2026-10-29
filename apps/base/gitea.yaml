@@ -41,6 +41,8 @@ spec:
               # defined in apps/gitea/gitea-admin-sealed.yaml.
               existingSecret: gitea-admin
             config:
+              security:
+                ALLOWED_HOST_LIST: *
               server:
                 DOMAIN: gitea.127.0.0.1.nip.io
                 ROOT_URL: http://gitea.127.0.0.1.nip.io/
