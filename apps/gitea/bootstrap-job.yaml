@@ -86,6 +86,24 @@ spec:
                   ;;
               esac
 
+              # Register the Argo Events webhook so tag pushes/creates trigger
+              # the clone-and-build Workflow. The sensor filters out branch
+              # pushes, which includes commits made to deploy/ by Image Updater.
+              echo "Ensuring Gitea webhook ${WEBHOOK_URL}..."
+              hooks=$(curl -fsS -u "${GITEA_USERNAME}:${GITEA_PASSWORD}" \
+                "${API}/repos/${GITEA_OWNER}/${GITEA_REPO}/hooks")
+              if printf '%s' "$hooks" | grep -Fq "${WEBHOOK_URL}"; then
+                echo "Webhook already exists"
+              else
+                hook_body=$(printf '{"type":"gitea","active":true,"events":["push","create"],"config":{"url":"%s","content_type":"json","http_method":"post"}}' "$WEBHOOK_URL")
+                curl -fsS -u "${GITEA_USERNAME}:${GITEA_PASSWORD}" \
+                  -X POST \
+                  -H 'Content-Type: application/json' \
+                  -d "$hook_body" \
+                  "${API}/repos/${GITEA_OWNER}/${GITEA_REPO}/hooks" >/dev/null
+                echo "Created Gitea webhook"
+              fi
+
               # Never put the password in the git URL or on the command line.
               # GIT_ASKPASS supplies it from the environment when git asks.
               cat > /tmp/askpass.sh <<'ASKPASS'
@@ -171,6 +189,8 @@ spec:
                 secretKeyRef:
                   name: gitea-admin
                   key: password
+            - name: WEBHOOK_URL
+              value: http://webhook-eventsource-svc.argo-events.svc.cluster.local:12000/app
             - name: SOURCE_REPO
               value: https://github.com/merkata/cncf-lab.git
             # Pin the source revision so the bootstrap result is reproducible.
