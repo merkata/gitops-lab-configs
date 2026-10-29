@@ -28,10 +28,8 @@ spec:
                   parameters:
                     - name: body
                       value: hello world
-                templates:
-                  - name: clone-and-build
-                    workflowTemplateRef:
-                      name: clone-and-build
+                workflowTemplateRef:
+                  name: clone-and-build
           parameters:
             - src:
                 dependencyName: app-dep
