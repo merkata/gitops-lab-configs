@@ -48,7 +48,9 @@ spec:
                 # cannot discover the image from a standard workload.
                 forceUpdate: true
               writeBackConfig:
-                method: "git:secret:gitea-git-credentials"
+                # Use Argo CD repository credentials. Image Updater v1.3.1's
+                # git:secret path does not recognize plain HTTP Git URLs.
+                method: "git:repocreds"
                 gitConfig:
                   repository: http://gitea-http.gitea.svc.cluster.local:3000/gitea_admin/app.git
                   branch: main
