@@ -6,9 +6,16 @@ metadata:
 spec:
   serviceAccountName: argo-workflow
   entrypoint: clone-and-build
+  arguments:
+    parameters:
+      - name: body
+        value: v1
   templates:
     - name: clone-and-build
       inputs:
+        parameters:
+          - name: body
+            value: {{ workflow.parameters.body }}
         artifacts:
           - name: app-source
             path: /src
@@ -57,8 +64,7 @@ spec:
               --local context=/src \
               --local dockerfile=/src \
               --output type=docker,dest=/tmp/image.tar \
-              --output type=image,name=harbor.harbor.svc.cluster.local/app/app-image:latest,push=true
-        #command: [buildctl-daemonless.sh]
+              --output type=image,name=harbor.harbor.svc.cluster.local/app/app-image:{{ inputs.parameters.body.ref }},push=true
         env:
           - name: BUILDKITD_FLAGS
             value: --oci-worker-no-process-sandbox --config /home/user/.config/buildkit/buildkitd.toml
@@ -72,15 +78,4 @@ spec:
               secretKeyRef:
                 name: harbor-registry-credentials
                 key: password
-        #args:
-        #  - build
-        #  - --frontend=dockerfile.v0
-        #  - --local
-        #  - context=/src
-        #  - --local
-        #  - dockerfile=/src
-        #  - --output
-        #  - type=docker,dest=/tmp/image.tar
-        #  - --output
-        #  - type=image,name=harbor.harbor.svc.cluster.local/app/app-image:latest,push=true
         workingDir: /src
