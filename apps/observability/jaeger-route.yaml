@@ -8,7 +8,7 @@ metadata:
 spec:
   parentRefs:
     - name: lab
-      namespace: platform
+      namespace: istio-ingress
       sectionName: http
   hostnames:
     - jaeger.127.0.0.1.nip.io

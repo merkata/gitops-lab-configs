@@ -41,7 +41,7 @@ spec:
             enabled: true
             parentRefs:
               - name: lab
-                namespace: platform
+                namespace: istio-ingress
                 sectionName: http
             hostnames:
               - grafana.127.0.0.1.nip.io
